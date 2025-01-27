@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do List</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    /* General body styling */
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #fff; /* Set text color to white for contrast */
+    }
+
+    /* Style the background video */
+    #background-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1; /* Ensure it stays in the background */
+    }
+
+    /* Container for tasks */
+    #taskContainer {
+      position: relative;
+      z-index: 1; /* Bring the task container to the front */
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: rgba(0, 0, 0, 0.6); /* Add semi-transparent background for contrast */
+      border-radius: 10px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input, button {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background-color: #2998b9;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #8bd7da;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      margin-bottom: 10px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+    }
+
+    li.completed .task-text {
+      text-decoration: line-through; /* Apply strike-through only to task text */
+    }
+
+    button.delete-btn {
+      background-color: #f44336;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    button.delete-btn:hover {
+      background-color: #e53935;
+    }
+
+    .task-number {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    /* Style for the "WELL DONE!" message */
+    .well-done-message {
+      color: #4CAF50;
+      font-size: 16px;
+      font-weight: bold;
+      margin-left: 10px;
+      display: none; /* Initially hidden */
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background video -->
+  <video id="background-video" autoplay muted loop>
+    <source src="/video.mp4" type="video/mp4"> <!-- Ensure the correct file path -->
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Your app content goes here -->
+  <div id="taskContainer">
+    <h1>My To-Do List</h1>
+    <input type="text" id="taskInput" placeholder="Add a task...">
+    <button onclick="addTask()">Add Task</button>
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    let taskCounter = 1; // Initialize task counter
+    const taskInput = document.getElementById('taskInput');
+    const taskList = document.getElementById('taskList');
+
+    // Load tasks from localStorage and display them
+    function loadTasks() {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || []; // Get tasks from localStorage
+      taskCounter = tasks.length + 1; // Set counter based on number of tasks
+      tasks.forEach(task => {
+        const li = createTaskElement(task.text, task.completed);
+        taskList.appendChild(li);
+      });
+    }
+
+    // Add Task Function
+    function addTask() {
+      const taskText = taskInput.value.trim();
+      if (taskText !== '') {
+        const task = { text: taskText, completed: false };
+
+        // Create a task element and add it to the list
+        const li = createTaskElement(taskText, task.completed);
+        taskList.appendChild(li);
+        
+        // Save the task in localStorage
+        saveTask(task);
+
+        // Clear input after adding the task
+        taskInput.value = '';
+      }
+    }
+
+    // Create task element (with task text, buttons, and message)
+    function createTaskElement(taskText, completed) {
+      const li = document.createElement('li');
+      const taskNumber = document.createElement('span');
+      taskNumber.classList.add('task-number');
+      taskNumber.textContent = taskCounter; // Display the current task number
+
+      li.innerHTML = ` 
+        <span class="task-text">${taskText}</span>
+        <button class="complete-btn" onclick="toggleComplete(this)">Complete</button>
+        <button class="delete-btn" onclick="deleteTask(this)">Delete</button>
+        <span class="well-done-message">WELL DONE!</span>
+      `;
+      
+      // Insert task number at the beginning of the li
+      li.insertBefore(taskNumber, li.firstChild);
+
+      // Add completed class if task is marked as completed
+      if (completed) {
+        li.classList.add('completed');
+        li.querySelector('.well-done-message').style.display = 'inline';
+      }
+
+      taskCounter++; // Increment task counter for the next task
+      return li;
+    }
+
+    // Mark Task as Complete
+    function toggleComplete(button) {
+      const li = button.parentElement;
+      const wellDoneMessage = li.querySelector('.well-done-message');
+      li.classList.toggle('completed');
+      
+      // Show "WELL DONE!" message when a task is marked as complete
+      if (li.classList.contains('completed')) {
+        wellDoneMessage.style.display = 'inline';
+      } else {
+        wellDoneMessage.style.display = 'none';
+      }
+
+      // Update the task in localStorage
+      updateTaskInLocalStorage();
+    }
+
+    // Delete Task
+    function deleteTask(button) {
+      const li = button.parentElement;
+      li.remove();
+      updateTaskInLocalStorage(); // Update localStorage after deletion
+    }
+
+    // Save task in localStorage
+    function saveTask(task) {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.push(task);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Update tasks in localStorage
+    function updateTaskInLocalStorage() {
+      const tasks = [];
+      document.querySelectorAll('#taskList li').forEach((li, index) => {
+        const taskText = li.querySelector('.task-text').textContent;
+        const completed = li.classList.contains('completed');
+        tasks.push({ text: taskText, completed });
+      });
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Load tasks when the page is loaded
+    window.onload = loadTasks;
+  </script>
+
+</body>
+</html>
